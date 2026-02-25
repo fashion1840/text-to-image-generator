@@ -1,73 +1,66 @@
-# React + TypeScript + Vite
+# 文字转图片生成器
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+一个精美的在线文字转图片工具，支持实时预览、多种背景样式、自定义设置等功能。
 
-Currently, two official plugins are available:
+## 在线体验
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+https://vswijg757kr7a.ok.kimi.link
 
-## React Compiler
+## 功能特性
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 文字编辑
+- 支持多行文字输入
+- 自动换行
+- Markdown 格式支持（粗体、斜体、下划线、高亮）
 
-## Expanding the ESLint configuration
+### 背景样式（36种）
+- **渐变背景**（12种）：紫罗兰、粉红糖果、天空蓝、清新薄荷、蜜桃暖阳、深海秘境、樱花粉蓝、玫瑰晨露、奶油杏色、森林绿、霓虹渐变、深邃星空
+- **纯色背景**（12种）：纯白、米白、奶油、薄荷、浅粉、浅紫、深夜、深灰、海军蓝、紫水晶、珊瑚红、深海蓝
+- **纹理背景**（12种）：纸张、方格、圆点、横线、斜线、十字、竖线、棋盘、噪点、波浪、六边、点阵
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 自定义背景
+- 支持上传本地图片
+- 支持输入图片链接
+- 自动裁剪适配（cover 模式）
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 字体设置
+- 3种字体选择
+- 字体大小调节（24-120px）
+- 行高调节（1.0-2.5）
+- 边距调节（40-150px）
+- 阴影强度调节
+- 三种对齐方式（左对齐、居中、右对齐）
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 图片比例
+- 3:4（小红书）
+- 1:1（方形）
+- 4:3（横版）
+- 9:16（抖音）
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 技术栈
+
+- React + TypeScript + Vite
+- Tailwind CSS
+- shadcn/ui
+- Canvas API
+
+## 本地运行
+
+```bash
+# 安装依赖
+npm install
+
+# 开发模式
+npm run dev
+
+# 构建
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 截图
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+![预览](https://github.com/fashion1840/text-to-image-generator/raw/main/preview.png)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## License
+
+MIT
