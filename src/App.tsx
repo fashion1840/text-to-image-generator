@@ -105,6 +105,8 @@ const textureStyles: BackgroundStyle[] = [
 const fontFamilies = [
   { id: 'system', name: '系统默认', family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
   { id: 'serif', name: '思源宋体', family: '"Noto Serif SC", "Source Han Serif SC", serif' },
+  { id: 'kaiti', name: '古典楷体', family: '"Kaiti SC", "STKaiti", "KaiTi", serif' },
+  { id: 'rounded', name: '现代圆体', family: '"PingFang SC", "Microsoft YaHei", "Quicksand", sans-serif' },
   { id: 'mono', name: '等宽字体', family: '"SF Mono", "Consolas", monospace' },
 ]
 
@@ -934,7 +936,7 @@ function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Left Panel - Controls */}
-          <div className="lg:col-span-5 space-y-6 animate-fade-in">
+          <div className="lg:col-span-5 space-y-6 sm:animate-fade-in">
             {/* Text Input Section */}
             <div className="glass-panel control-section">
               <div className="flex items-center justify-between">
@@ -944,7 +946,7 @@ function App() {
                   </div>
                   <h2 className="text-base font-bold text-slate-800">文字内容</h2>
                 </div>
-                <div className="flex items-center bg-slate-100/50 p-1 rounded-xl">
+                <div className="flex items-center bg-slate-100 rounded-xl p-1">
                   {[
                     { id: 'bold', icon: Bold, title: '粗体' },
                     { id: 'italic', icon: Italic, title: '斜体' },
@@ -1028,7 +1030,7 @@ function App() {
               </div>
               
               {/* Tab Switch */}
-              <div className="flex p-1 bg-slate-100/50 rounded-xl mb-4">
+              <div className="flex p-1 bg-slate-100 rounded-xl mb-4">
                 {[
                   { id: 'gradient', label: '魔法渐变' },
                   { id: 'solid', label: '极简纯色' },
@@ -1149,15 +1151,33 @@ function App() {
                     <Label className="text-xs font-bold text-slate-500">艺术字体</Label>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between h-10 bg-slate-50/50 border-slate-200 rounded-xl font-medium">
-                          {selectedFont.name}
-                          <ChevronDown className="w-4 h-4 text-slate-400" />
+                        <Button variant="outline" className="w-full justify-between h-10 bg-slate-50/50 border-slate-200 rounded-xl font-medium px-3">
+                          <span style={{ fontFamily: selectedFont.family }} className="truncate">
+                            {selectedFont.name}
+                          </span>
+                          <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 ml-2" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className="rounded-xl p-1 shadow-xl border-slate-100">
+                      <DropdownMenuContent 
+                        side="bottom" 
+                        align="start" 
+                        sideOffset={8}
+                        className="w-48 rounded-xl p-1 shadow-2xl border-slate-100 bg-white/95 backdrop-blur-md animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200"
+                      >
                         {fontFamilies.map((font) => (
-                          <DropdownMenuItem key={font.id} onClick={() => setSelectedFont(font)} className="rounded-lg font-medium cursor-pointer">
-                            {font.name}
+                          <DropdownMenuItem 
+                            key={font.id} 
+                            onClick={() => setSelectedFont(font)} 
+                            className={`rounded-lg px-3 py-2 cursor-pointer transition-colors ${
+                              selectedFont.id === font.id 
+                                ? 'bg-indigo-50 text-indigo-600' 
+                                : 'hover:bg-slate-50 text-slate-700'
+                            }`}
+                          >
+                            <span className="text-sm font-bold" style={{ fontFamily: font.family }}>{font.name}</span>
+                            {selectedFont.id === font.id && (
+                              <Check className="w-4 h-4 ml-auto text-indigo-600" />
+                            )}
                           </DropdownMenuItem>
                         ))}
                       </DropdownMenuContent>
@@ -1165,7 +1185,7 @@ function App() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold text-slate-500">对齐方式</Label>
-                    <div className="flex p-1 bg-slate-100/50 rounded-xl h-10">
+                    <div className="flex p-1 bg-slate-100 rounded-xl h-10">
                       {[
                         { id: 'left', icon: AlignLeft },
                         { id: 'center', icon: AlignCenter },

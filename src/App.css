@@ -134,11 +134,19 @@ body {
 /* 适配移动端 */
 @media (max-width: 640px) {
   .glass-panel {
-    @apply border-none shadow-none bg-transparent;
+    @apply border-none shadow-none;
+    background: white; /* 移动端使用纯白背景确保可见性 */
     backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
   
   .preview-card-frame {
-    box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  /* 移动端控制面板内距优化 */
+  .control-section {
+    @apply p-4 rounded-xl;
+    background: white !important; /* 强制白色背景 */
   }
 }
