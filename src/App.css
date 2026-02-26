@@ -1,236 +1,144 @@
-/* 文字转图片生成器 - 响应式样式 */
+/* 文字转图片生成器 - 高级 UI 样式 */
+
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --premium-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+}
 
 /* 基础样式 */
 * {
   -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+}
+
+body {
+  background: radial-gradient(circle at top right, #fdf2f8, transparent),
+              radial-gradient(circle at bottom left, #eef2ff, transparent),
+              #f8fafc;
+  min-height: 100vh;
 }
 
 /* 自定义滚动条 */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 3px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
+  background: #e2e8f0;
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #cbd5e1;
 }
 
-/* 移动端优化 */
-@media (max-width: 640px) {
-  /* 减小间距 */
-  .space-y-4 > * + * {
-    margin-top: 0.75rem;
-  }
-  
-  /* 卡片内边距优化 */
-  .rounded-2xl {
-    border-radius: 1rem;
-  }
-  
-  /* 滑块触摸优化 */
-  [data-slot="slider-track"] {
-    height: 6px !important;
-  }
-  
-  [data-slot="slider-thumb"] {
-    width: 18px !important;
-    height: 18px !important;
-  }
-  
-  /* 按钮触摸区域 */
-  button {
-    min-height: 36px;
-  }
-  
-  /* 输入框优化 */
-  textarea, input {
-    font-size: 16px; /* 防止 iOS 缩放 */
-  }
+/* 毛玻璃效果 */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--premium-shadow);
 }
 
-/* 平板适配 */
-@media (min-width: 641px) and (max-width: 1023px) {
-  .rounded-2xl {
-    border-radius: 1.25rem;
-  }
+/* 渐变文本 */
+.text-gradient {
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* 桌面端优化 */
-@media (min-width: 1024px) {
-  /* 左侧控制面板滚动 */
-  .space-y-4 {
-    max-height: calc(100vh - 120px);
-    overflow-y: auto;
-    padding-right: 8px;
-  }
-  
-  /* 右侧预览固定 */
-  .lg\:sticky {
-    position: sticky;
-    top: 6rem;
-  }
+/* 预览卡片外框 - 模拟物理卡片感 */
+.preview-container {
+  perspective: 1000px;
 }
 
-/* 背景样式切换动画 */
-button {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+.preview-card-frame {
+  position: relative;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
 }
 
-button:active {
-  transform: scale(0.98);
+.preview-card-frame:hover {
+  transform: translateY(-5px) rotateX(2deg) rotateY(-2deg);
 }
 
-/* 背景选中效果 */
-.ring-2 {
-  --tw-ring-offset-width: 2px;
+/* 控制面板项 */
+.control-section {
+  @apply space-y-4 p-5 rounded-2xl transition-all duration-300;
 }
 
-/* Tab 切换动画 */
-[data-tab] {
-  transition: all 0.2s ease;
+.control-section:hover {
+  background: rgba(255, 255, 255, 0.9);
 }
 
-/* 预览区域阴影 */
-.shadow-lg {
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15);
+/* 按钮高级样式 */
+.btn-premium {
+  @apply relative overflow-hidden transition-all duration-300 active:scale-95;
 }
 
-/* 加载动画 */
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.btn-premium::after {
+  content: '';
+  @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+  background: linear-gradient(rgba(255, 255, 255, 0.2), transparent);
 }
 
-.animate-spin {
-  animation: spin 0.8s linear infinite;
+.btn-premium:hover::after {
+  @apply opacity-100;
 }
 
-/* Toast 通知样式 */
-[data-sonner-toast] {
-  font-size: 14px !important;
+/* 输入框高级样式 */
+.textarea-premium {
+  @apply bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all duration-300;
 }
 
-@media (max-width: 640px) {
-  [data-sonner-toast] {
-    font-size: 13px !important;
-  }
+/* 样式选择器高级样式 */
+.style-chip {
+  @apply relative cursor-pointer overflow-hidden rounded-xl transition-all duration-300 hover:shadow-md active:scale-90;
 }
 
-/* Dropdown 菜单优化 */
-[data-slot="dropdown-menu-content"] {
-  min-width: 140px;
+.style-chip.active {
+  @apply ring-2 ring-indigo-500 ring-offset-2 scale-105;
 }
 
-/* Slider 样式优化 */
-[data-slot="slider-track"] {
-  background: #e2e8f0 !important;
-}
-
+/* 滑块高级样式 */
 [data-slot="slider-range"] {
-  background: linear-gradient(to right, #8b5cf6, #d946ef) !important;
+  background: var(--accent-gradient) !important;
 }
 
 [data-slot="slider-thumb"] {
-  border-color: #8b5cf6 !important;
-  background: white !important;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3) !important;
+  @apply border-2 border-white shadow-lg !important;
+  background: #6366f1 !important;
 }
 
-[data-slot="slider-thumb"]:hover {
-  transform: scale(1.1);
+/* 动画 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Textarea 焦点样式 */
-textarea:focus {
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-  border-color: #8b5cf6;
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
 }
 
-/* 格式按钮悬停 */
-button[title]:hover {
-  background-color: #f1f5f9;
-}
-
-/* 背景样式网格 */
-.grid-cols-4 {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-}
-
-/* 渐变背景预览 */
-[style*="linear-gradient"] {
-  transition: transform 0.2s ease;
-}
-
-/* 纯色背景边框 */
-[style*="backgroundColor"] {
-  transition: transform 0.2s ease;
-}
-
-/* 选中状态脉冲 */
-@keyframes pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 6px rgba(139, 92, 246, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
-  }
-}
-
-.ring-2.ring-violet-500 {
-  animation: pulse-ring 1.5s ease-out;
-}
-
-/* 响应式字体 */
-html {
-  font-size: 14px;
-}
-
-@media (min-width: 640px) {
-  html {
-    font-size: 15px;
-  }
-}
-
-@media (min-width: 1024px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-/* 防止水平滚动 */
-body {
-  overflow-x: hidden;
-}
-
-/* 触摸设备优化 */
-@media (pointer: coarse) {
-  button, 
-  [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
+/* 适配移动端 */
+@media (max-width: 640px) {
+  .glass-panel {
+    @apply border-none shadow-none bg-transparent;
+    backdrop-filter: none;
   }
   
-  /* 增大滑块触摸区域 */
-  [data-slot="slider-thumb"] {
-    width: 24px !important;
-    height: 24px !important;
+  .preview-card-frame {
+    box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.1);
   }
 }

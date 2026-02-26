@@ -109,13 +109,87 @@ const fontFamilies = [
   { id: 'mono', name: '等宽字体', family: '"SF Mono", "Consolas", monospace' },
 ]
 
-// 图片比例
+// 背景比例
 const aspectRatios = [
   { id: '3:4', name: '3:4', width: 900, height: 1200 },
   { id: '1:1', name: '1:1', width: 1080, height: 1080 },
   { id: '4:3', name: '4:3', width: 1200, height: 900 },
   { id: '9:16', name: '9:16', width: 1080, height: 1920 },
 ]
+
+// 文本片段类型
+interface TextSegment {
+  text: string
+  isBold?: boolean
+  isItalic?: boolean
+  isUnderline?: boolean
+  isHighlight?: boolean
+}
+
+// 解析 Markdown 格式 - 增强版支持嵌套、转义和边界处理
+const parseMarkdown = (text: string): TextSegment[] => {
+  const segments: TextSegment[] = []
+  
+  // 1. 处理转义字符: 将 \* \_ \= 替换为占位符
+  let processedText = text.replace(/\\(\*|_|=)/g, (_, char) => {
+    return `\u0000${char.charCodeAt(0)}\u0000`
+  })
+
+  // 2. 状态追踪
+  let isBold = false
+  let isItalic = false
+  let isUnderline = false
+  let isHighlight = false
+
+  // 3. 匹配所有标记，优先级: ** (粗体), __ (下划线), == (高亮), * (斜体)
+  const markerRegex = /(\*\*|__|==|\*)/g
+  
+  let lastIndex = 0
+  let match
+
+  while ((match = markerRegex.exec(processedText)) !== null) {
+    const marker = match[0]
+    const index = match.index
+
+    // 添加之前的文本片段
+    if (index > lastIndex) {
+      const content = processedText.slice(lastIndex, index).replace(/\u0000(\d+)\u0000/g, (_, code) => String.fromCharCode(parseInt(code)))
+      segments.push({ text: content, isBold, isItalic, isUnderline, isHighlight })
+    }
+
+    // 切换状态
+    if (marker === '**') isBold = !isBold
+    else if (marker === '*') isItalic = !isItalic
+    else if (marker === '__') isUnderline = !isUnderline
+    else if (marker === '==') isHighlight = !isHighlight
+
+    lastIndex = markerRegex.lastIndex
+  }
+
+  // 添加剩余的文本
+  if (lastIndex < processedText.length) {
+    const content = processedText.slice(lastIndex).replace(/\u0000(\d+)\u0000/g, (_, code) => String.fromCharCode(parseInt(code)))
+    segments.push({ text: content, isBold, isItalic, isUnderline, isHighlight })
+  }
+
+  // 4. 合并相同样式的相邻片段，过滤空片段
+  const mergedSegments: TextSegment[] = []
+  segments.forEach(seg => {
+    if (!seg.text) return
+    const last = mergedSegments[mergedSegments.length - 1]
+    if (last && 
+        last.isBold === seg.isBold && 
+        last.isItalic === seg.isItalic && 
+        last.isUnderline === seg.isUnderline && 
+        last.isHighlight === seg.isHighlight) {
+      last.text += seg.text
+    } else {
+      mergedSegments.push(seg)
+    }
+  })
+
+  return mergedSegments.length > 0 ? mergedSegments : [{ text: '' }]
+}
 
 function App() {
   // 内容状态
@@ -159,38 +233,58 @@ function App() {
   const drawTexture = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, textureType: string) => {
     ctx.save()
     
+    // 增加全局线条清晰度 (抗锯齿优化)
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+
     switch (textureType) {
       case 'paper':
-        // 纸张纹理 - 噪点效果
-        for (let i = 0; i < 3000; i++) {
+        // 纸张纹理 - 增加噪点密度和对比度
+        for (let i = 0; i < 5000; i++) {
           const x = Math.random() * width
           const y = Math.random() * height
-          ctx.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.03 + 0.01})`
-          ctx.fillRect(x, y, 1, 1)
+          ctx.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.05 + 0.02})`
+          ctx.fillRect(x, y, 1.5, 1.5)
         }
-        // 纤维线条
-        for (let i = 0; i < 30; i++) {
+        // 增加纤维线条清晰度
+        for (let i = 0; i < 40; i++) {
           ctx.beginPath()
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.015)'
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.03)'
+          ctx.lineWidth = 0.8
           const startX = Math.random() * width
           const startY = Math.random() * height
           ctx.moveTo(startX, startY)
-          ctx.lineTo(startX + Math.random() * 80 - 40, startY + Math.random() * 80 - 40)
+          ctx.lineTo(startX + Math.random() * 100 - 50, startY + Math.random() * 100 - 50)
           ctx.stroke()
         }
         break
         
       case 'grid':
-        // 方格纹理
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.06)'
-        ctx.lineWidth = 1
-        for (let x = 0; x <= width; x += 30) {
+        // 方格纹理 - 加粗主线，细化副线
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
+        ctx.lineWidth = 1.2
+        for (let x = 0; x <= width; x += 40) {
           ctx.beginPath()
           ctx.moveTo(x, 0)
           ctx.lineTo(x, height)
           ctx.stroke()
         }
-        for (let y = 0; y <= height; y += 30) {
+        for (let y = 0; y <= height; y += 40) {
+          ctx.beginPath()
+          ctx.moveTo(0, y)
+          ctx.lineTo(width, y)
+          ctx.stroke()
+        }
+        // 细格线
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.03)'
+        ctx.lineWidth = 0.5
+        for (let x = 20; x <= width; x += 40) {
+          ctx.beginPath()
+          ctx.moveTo(x, 0)
+          ctx.lineTo(x, height)
+          ctx.stroke()
+        }
+        for (let y = 20; y <= height; y += 40) {
           ctx.beginPath()
           ctx.moveTo(0, y)
           ctx.lineTo(width, y)
@@ -199,34 +293,41 @@ function App() {
         break
         
       case 'dots':
-        // 圆点纹理
-        for (let x = 20; x < width; x += 25) {
-          for (let y = 20; y < height; y += 25) {
+        // 圆点纹理 - 增大圆点并增加间距感
+        for (let x = 25; x < width; x += 35) {
+          for (let y = 25; y < height; y += 35) {
             ctx.beginPath()
-            ctx.arc(x, y, 2, 0, Math.PI * 2)
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.06)'
+            ctx.arc(x, y, 2.5, 0, Math.PI * 2)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'
             ctx.fill()
           }
         }
         break
         
       case 'lines':
-        // 横线纹理
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)'
-        ctx.lineWidth = 1
-        for (let y = 40; y <= height; y += 28) {
+        // 横线纹理 - 模拟信纸感
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
+        ctx.lineWidth = 1.5
+        for (let y = 60; y <= height; y += 35) {
           ctx.beginPath()
-          ctx.moveTo(0, y)
-          ctx.lineTo(width, y)
+          ctx.moveTo(40, y)
+          ctx.lineTo(width - 40, y)
           ctx.stroke()
         }
+        // 左侧红线 (模拟笔记本)
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.15)'
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(80, 0)
+        ctx.lineTo(80, height)
+        ctx.stroke()
         break
         
       case 'diagonal':
-        // 斜线纹理
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)'
-        ctx.lineWidth = 1
-        const spacing = 25
+        // 斜线纹理 - 增加线条锐度
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.07)'
+        ctx.lineWidth = 1.2
+        const spacing = 30
         for (let i = -height; i < width + height; i += spacing) {
           ctx.beginPath()
           ctx.moveTo(i, 0)
@@ -236,10 +337,10 @@ function App() {
         break
         
       case 'cross':
-        // 十字纹理
-        const crossSize = 5
-        const crossSpacing = 35
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
+        // 十字纹理 - 增加尺寸和对比度
+        const crossSize = 6
+        const crossSpacing = 45
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)'
         ctx.lineWidth = 1.5
         for (let x = crossSpacing / 2; x < width; x += crossSpacing) {
           for (let y = crossSpacing / 2; y < height; y += crossSpacing) {
@@ -257,9 +358,9 @@ function App() {
         
       case 'vertical':
         // 竖线纹理
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)'
-        ctx.lineWidth = 1
-        for (let x = 40; x <= width; x += 28) {
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
+        ctx.lineWidth = 1.2
+        for (let x = 60; x <= width; x += 35) {
           ctx.beginPath()
           ctx.moveTo(x, 0)
           ctx.lineTo(x, height)
@@ -268,9 +369,9 @@ function App() {
         break
         
       case 'checkerboard':
-        // 棋盘纹理
-        const checkSize = 25
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.04)'
+        // 棋盘纹理 - 提高对比度
+        const checkSize = 35
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.06)'
         for (let x = 0; x < width; x += checkSize) {
           for (let y = 0; y < height; y += checkSize) {
             if ((Math.floor(x / checkSize) + Math.floor(y / checkSize)) % 2 === 0) {
@@ -281,26 +382,26 @@ function App() {
         break
         
       case 'noise':
-        // 噪点纹理 - 更密集
-        for (let i = 0; i < 8000; i++) {
+        // 噪点纹理 - 增强颗粒感
+        for (let i = 0; i < 10000; i++) {
           const x = Math.random() * width
           const y = Math.random() * height
-          const opacity = Math.random() * 0.08 + 0.02
+          const opacity = Math.random() * 0.12 + 0.05
           ctx.fillStyle = Math.random() > 0.5 ? `rgba(0, 0, 0, ${opacity})` : `rgba(255, 255, 255, ${opacity})`
-          ctx.fillRect(x, y, 2, 2)
+          ctx.fillRect(x, y, 2.5, 2.5)
         }
         break
         
       case 'waves':
-        // 波浪纹理
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)'
-        ctx.lineWidth = 1
-        const waveSpacing = 20
-        for (let y = 0; y < height; y += waveSpacing) {
+        // 波浪纹理 - 增加线条连贯性
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
+        ctx.lineWidth = 1.5
+        const waveSpacing = 30
+        for (let y = 0; y < height + 20; y += waveSpacing) {
           ctx.beginPath()
-          for (let x = 0; x <= width; x += 5) {
-            const waveY = y + Math.sin(x * 0.05) * 5
-            if (x === 0) {
+          for (let x = -10; x <= width + 10; x += 5) {
+            const waveY = y + Math.sin(x * 0.04) * 8
+            if (x === -10) {
               ctx.moveTo(x, waveY)
             } else {
               ctx.lineTo(x, waveY)
@@ -311,12 +412,12 @@ function App() {
         break
         
       case 'hexagon':
-        // 六边形纹理
-        const hexSize = 18
+        // 六边形纹理 - 调整比例和线条
+        const hexSize = 22
         const hexHeight = hexSize * Math.sqrt(3)
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.06)'
-        ctx.lineWidth = 1
-        for (let row = 0; row < height / hexHeight + 2; row++) {
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.09)'
+        ctx.lineWidth = 1.2
+        for (let row = 0; row < height / (hexHeight * 0.75) + 2; row++) {
           for (let col = 0; col < width / (hexSize * 3) + 2; col++) {
             const x = col * hexSize * 3 + (row % 2) * hexSize * 1.5
             const y = row * hexHeight * 0.75
@@ -335,12 +436,12 @@ function App() {
         break
         
       case 'stipple':
-        // 点阵纹理 - 不规则点阵
-        for (let i = 0; i < 2000; i++) {
+        // 点阵纹理 - 增加动态感
+        for (let i = 0; i < 3000; i++) {
           const x = Math.random() * width
           const y = Math.random() * height
-          const size = Math.random() > 0.8 ? 2 : 1
-          ctx.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.1 + 0.03})`
+          const size = Math.random() > 0.8 ? 3 : 1.5
+          ctx.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.15 + 0.05})`
           ctx.fillRect(x, y, size, size)
         }
         break
@@ -349,44 +450,107 @@ function App() {
     ctx.restore()
   }, [])
 
-  // 自动换行函数
-  const wrapText = useCallback((ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {
-    const lines: string[] = []
+  // 设置 Canvas 字体样式
+  const setCanvasFont = useCallback((ctx: CanvasRenderingContext2D, baseFontSize: number, baseFamily: string, isBold?: boolean, isItalic?: boolean) => {
+    let style = ''
+    if (isBold && isItalic) style = 'bold italic '
+    else if (isBold) style = 'bold '
+    else if (isItalic) style = 'italic '
+    
+    ctx.font = `${style}${baseFontSize}px ${baseFamily}`
+  }, [])
+
+  // 自动换行函数 - 高性能中英文混合换行策略
+  const wrapText = useCallback((ctx: CanvasRenderingContext2D, text: string, maxWidth: number, baseFontSize: number, baseFamily: string): TextSegment[][] => {
+    const lines: TextSegment[][] = []
     const paragraphs = text.split('\n')
     
     paragraphs.forEach((paragraph) => {
       if (paragraph.trim() === '') {
-        lines.push('')
+        lines.push([{ text: '' }])
         return
       }
       
-      let currentLine = ''
-      const chars = paragraph.split('')
+      const segments = parseMarkdown(paragraph)
+      let currentLine: TextSegment[] = []
+      let currentLineWidth = 0
       
-      for (let i = 0; i < chars.length; i++) {
-        const char = chars[i]
-        const testLine = currentLine + char
-        const metrics = ctx.measureText(testLine)
-        const testWidth = metrics.width
+      segments.forEach(segment => {
+        setCanvasFont(ctx, baseFontSize, baseFamily, segment.isBold, segment.isItalic)
         
-        if (testWidth > maxWidth && currentLine !== '') {
-          lines.push(currentLine)
-          currentLine = char
-        } else {
-          currentLine = testLine
+        // 1. 块级尝试 (Fast Path)
+        const segmentWidth = ctx.measureText(segment.text).width
+        if (currentLineWidth + segmentWidth <= maxWidth) {
+          currentLine.push(segment)
+          currentLineWidth += segmentWidth
+          return
         }
-      }
+
+        // 2. 混合分词策略 (Hybrid Tokenization)
+        // 匹配规则: 英文单词(包含空格) 或 单个中文字符(CJK)
+        const tokens = segment.text.match(/[\u4e00-\u9fa5]|[\u3000-\u303f]|[\uff00-\uffef]|[^\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]+/g) || []
+        
+        let currentSegmentText = ''
+        
+        tokens.forEach(token => {
+          const tokenWidth = ctx.measureText(token).width
+          
+          if (currentLineWidth + tokenWidth > maxWidth && currentLineWidth > 0) {
+            // 换行
+            if (currentSegmentText) {
+              currentLine.push({ ...segment, text: currentSegmentText })
+            }
+            lines.push(currentLine)
+            
+            // 重置新行
+            currentLine = []
+            currentLineWidth = 0
+            
+            // 处理单个 token 就超过 maxWidth 的情况（如超长单词或中文字符）
+            if (tokenWidth > maxWidth) {
+              // 强制截断超长单词（保底逻辑）
+              const chars = token.split('')
+              let tempText = ''
+              chars.forEach(char => {
+                const charWidth = ctx.measureText(char).width
+                if (currentLineWidth + charWidth > maxWidth && currentLineWidth > 0) {
+                  currentLine.push({ ...segment, text: tempText })
+                  lines.push(currentLine)
+                  currentLine = []
+                  currentLineWidth = 0
+                  tempText = char
+                  currentLineWidth = charWidth
+                } else {
+                  tempText += char
+                  currentLineWidth += charWidth
+                }
+              })
+              currentSegmentText = tempText
+            } else {
+              currentSegmentText = token
+              currentLineWidth = tokenWidth
+            }
+          } else {
+            currentSegmentText += token
+            currentLineWidth += tokenWidth
+          }
+        })
+        
+        if (currentSegmentText) {
+          currentLine.push({ ...segment, text: currentSegmentText })
+        }
+      })
       
-      if (currentLine !== '') {
+      if (currentLine.length > 0) {
         lines.push(currentLine)
       }
     })
     
     return lines
-  }, [])
+  }, [setCanvasFont])
 
   // 绘制装饰元素
-  const drawDecorations = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  const drawDecorations = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.save()
     for (let i = 0; i < 15; i++) {
       const x = Math.random() * width
@@ -400,7 +564,7 @@ function App() {
       ctx.fill()
     }
     ctx.restore()
-  }
+  }, [])
 
   // 生成图片
   const generateImage = useCallback(async () => {
@@ -501,20 +665,67 @@ function App() {
       // 计算文字区域宽度
       const maxTextWidth = width - padding * 2
       
-      // 自动换行处理
-      const wrappedLines = wrapText(ctx, text, maxTextWidth)
+      // 自动换行处理 - 传入字体信息
+      const wrappedLines = wrapText(ctx, text, maxTextWidth, fontSize, selectedFont.family)
       
       const lineHeightPx = fontSize * lineHeight
       const totalHeight = wrappedLines.length * lineHeightPx
       const startY = (height - totalHeight) / 2 + lineHeightPx / 2
 
-      let x = width / 2
-      if (textAlign === 'left') x = padding
-      if (textAlign === 'right') x = width - padding
-
-      wrappedLines.forEach((line, index) => {
+      wrappedLines.forEach((lineSegments, index) => {
         const y = startY + index * lineHeightPx
-        ctx.fillText(line, x, y)
+        
+        // 计算整行宽度用于对齐
+        let totalLineWidth = 0
+        lineSegments.forEach(seg => {
+          setCanvasFont(ctx, fontSize, selectedFont.family, seg.isBold, seg.isItalic)
+          totalLineWidth += ctx.measureText(seg.text).width
+        })
+
+        // 确定起点 X
+        let currentX = width / 2 - totalLineWidth / 2
+        if (textAlign === 'left') currentX = padding
+        if (textAlign === 'right') currentX = width - padding - totalLineWidth
+
+        // 逐个绘制片段
+        lineSegments.forEach(seg => {
+          setCanvasFont(ctx, fontSize, selectedFont.family, seg.isBold, seg.isItalic)
+          const segWidth = ctx.measureText(seg.text).width
+          
+          // 绘制高亮背景
+          if (seg.isHighlight) {
+            ctx.save()
+            ctx.fillStyle = 'rgba(255, 255, 0, 0.4)' // 黄色半透明高亮
+            ctx.fillRect(currentX, y - fontSize / 2, segWidth, fontSize)
+            ctx.restore()
+          }
+
+          // 绘制文字
+          ctx.fillStyle = textColor
+          ctx.textAlign = 'left' // 片段绘制始终靠左接龙
+          
+          // 重新设置阴影（因为 fillRect 可能重置了或者需要保持）
+          if (shadowBlur > 0) {
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)'
+            ctx.shadowBlur = shadowBlur
+          }
+          
+          ctx.fillText(seg.text, currentX, y)
+          
+          // 绘制下划线
+          if (seg.isUnderline) {
+            ctx.save()
+            ctx.strokeStyle = textColor
+            ctx.lineWidth = Math.max(1, fontSize / 20)
+            ctx.beginPath()
+            ctx.moveTo(currentX, y + fontSize / 2)
+            ctx.lineTo(currentX + segWidth, y + fontSize / 2)
+            ctx.stroke()
+            ctx.restore()
+          }
+
+          currentX += segWidth
+        })
       })
 
       // 重置阴影
@@ -531,13 +742,14 @@ function App() {
     } finally {
       setIsGenerating(false)
     }
-  }, [text, selectedStyle, selectedFont, textAlign, fontSize, lineHeight, padding, shadowBlur, selectedRatio, wrapText, drawTexture])
+  }, [text, selectedStyle, selectedFont, textAlign, fontSize, lineHeight, padding, shadowBlur, selectedRatio, wrapText, drawTexture, drawDecorations, setCanvasFont])
 
-  // 实时预览
+  // 实时预览 - 无感知更新优化
   useEffect(() => {
+    // 依赖 generateImage 即可，因为 generateImage 已使用 useCallback 包含所有状态依赖
     const timer = setTimeout(() => {
       generateImage()
-    }, 150)
+    }, 100) // 缩短延迟，提高响应速度
     return () => clearTimeout(timer)
   }, [generateImage])
 
@@ -682,144 +894,154 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen selection:bg-indigo-100">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-xl flex items-center justify-center">
-              <Type className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+      <header className="glass-panel sticky top-0 z-50 transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+          <div className="flex items-center gap-3 sm:gap-4 group cursor-default">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200 group-hover:rotate-12 transition-transform duration-500">
+              <Type className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <h1 className="text-base sm:text-xl font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-              文字转图片
-            </h1>
+            <div>
+              <h1 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">
+                文字转图片 <span className="text-indigo-600">Pro</span>
+              </h1>
+              <p className="text-[10px] sm:text-xs text-slate-500 font-medium tracking-wider uppercase">Text to Image Designer</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={resetSettings}
-              className="gap-1 sm:gap-2 text-xs sm:text-sm h-8 sm:h-9"
+              className="gap-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
             >
-              <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">重置</span>
+              <RefreshCw className="w-4 h-4" />
+              <span className="hidden sm:inline font-medium">重置</span>
             </Button>
             <Button
               onClick={downloadImage}
               disabled={!generatedImage}
-              size="sm"
-              className="gap-1 sm:gap-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-xs sm:text-sm h-8 sm:h-9"
+              className="btn-premium gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 border-none px-4 sm:px-6"
             >
-              <Download className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">下载</span>
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline font-bold">导出图片</span>
             </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:items-start">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Left Panel - Controls */}
-          <div className="space-y-3 sm:space-y-4 lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto lg:pr-2">
-            {/* Text Input */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Type className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500" />
-                  <h2 className="text-sm sm:text-base font-semibold text-slate-800">文字内容</h2>
+          <div className="lg:col-span-5 space-y-6 animate-fade-in">
+            {/* Text Input Section */}
+            <div className="glass-panel control-section">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                    <Type className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <h2 className="text-base font-bold text-slate-800">文字内容</h2>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => insertFormat('bold')} className="p-1.5 hover:bg-slate-100 rounded-lg" title="粗体">
-                    <Bold className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" />
-                  </button>
-                  <button onClick={() => insertFormat('italic')} className="p-1.5 hover:bg-slate-100 rounded-lg" title="斜体">
-                    <Italic className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" />
-                  </button>
-                  <button onClick={() => insertFormat('underline')} className="p-1.5 hover:bg-slate-100 rounded-lg" title="下划线">
-                    <Underline className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" />
-                  </button>
-                  <button onClick={() => insertFormat('highlight')} className="p-1.5 hover:bg-slate-100 rounded-lg" title="高亮">
-                    <Highlighter className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" />
-                  </button>
+                <div className="flex items-center bg-slate-100/50 p-1 rounded-xl">
+                  {[
+                    { id: 'bold', icon: Bold, title: '粗体' },
+                    { id: 'italic', icon: Italic, title: '斜体' },
+                    { id: 'underline', icon: Underline, title: '下划线' },
+                    { id: 'highlight', icon: Highlighter, title: '高亮' },
+                  ].map((btn) => (
+                    <button
+                      key={btn.id}
+                      onClick={() => insertFormat(btn.id)}
+                      className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all"
+                      title={btn.title}
+                    >
+                      <btn.icon className="w-4 h-4 text-slate-600" />
+                    </button>
+                  ))}
                 </div>
               </div>
               
               <Textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="在这里输入你想要转换成图片的文字...&#10;支持 **粗体** *斜体* __下划线__ ==高亮=="
-                className="min-h-[100px] sm:min-h-[120px] resize-none text-sm sm:text-base"
+                placeholder="在这里输入你想要转换成图片的文字...&#10;支持 Markdown 格式加粗和高亮"
+                className="textarea-premium min-h-[140px] text-base leading-relaxed"
               />
               
-              <div className="flex items-center justify-between mt-3">
-                <p className="text-xs text-slate-500">
-                  支持 **粗体** *斜体* __下划线__ ==高亮==
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] text-slate-400 font-medium">
+                  提示: 按回车换行，内容将自动居中适配
                 </p>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={clearText}
-                  className="text-slate-500 hover:text-red-500 hover:bg-red-50 text-xs h-7"
+                  className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 text-xs h-8 px-3"
                 >
-                  清空
+                  清空内容
                 </Button>
               </div>
             </div>
 
-            {/* Aspect Ratio */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200">
-              <div className="flex items-center gap-2 mb-3">
-                <Layout className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500" />
-                <h2 className="text-sm sm:text-base font-semibold text-slate-800">图片比例</h2>
+            {/* Layout Settings Section */}
+            <div className="glass-panel control-section">
+              <div className="flex items-center gap-2.5 mb-1">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                  <Layout className="w-4 h-4 text-indigo-600" />
+                </div>
+                <h2 className="text-base font-bold text-slate-800">图片比例</h2>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-3">
                 {aspectRatios.map((ratio) => (
                   <button
                     key={ratio.id}
                     onClick={() => setSelectedRatio(ratio)}
-                    className={`py-2 px-1 sm:px-3 rounded-xl border-2 text-xs sm:text-sm font-medium transition-all ${
+                    className={`py-2.5 rounded-xl border-2 font-bold transition-all ${
                       selectedRatio.id === ratio.id
-                        ? 'border-violet-500 bg-violet-50 text-violet-700'
-                        : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm'
+                        : 'border-slate-100 text-slate-500 hover:border-slate-200 bg-slate-50/50'
                     }`}
                   >
-                    {ratio.id}
+                    <span className="text-xs">{ratio.name}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Background Style */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500" />
-                  <h2 className="text-sm sm:text-base font-semibold text-slate-800">背景样式</h2>
+            {/* Appearance Section */}
+            <div className="glass-panel control-section">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                    <Palette className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <h2 className="text-base font-bold text-slate-800">背景与样式</h2>
                 </div>
                 <button
                   onClick={() => setCustomDialogOpen(true)}
-                  className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-violet-600 bg-violet-50 hover:bg-violet-100 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-all"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  自定义
+                  + 自定义图片
                 </button>
               </div>
               
-              {/* Tab Switch - 3 tabs */}
-              <div className="flex gap-1.5 mb-3">
+              {/* Tab Switch */}
+              <div className="flex p-1 bg-slate-100/50 rounded-xl mb-4">
                 {[
-                  { id: 'gradient', label: '渐变' },
-                  { id: 'solid', label: '纯色' },
-                  { id: 'texture', label: '纹理' },
+                  { id: 'gradient', label: '魔法渐变' },
+                  { id: 'solid', label: '极简纯色' },
+                  { id: 'texture', label: '艺术纹理' },
                 ].map((tab) => (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveBgTab(tab.id as 'gradient' | 'solid' | 'texture')}
-                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
+                    onClick={() => setActiveBgTab(tab.id as any)}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
                       activeBgTab === tab.id
-                        ? 'bg-violet-500 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-white text-indigo-600 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
                     }`}
                   >
                     {tab.label}
@@ -827,155 +1049,124 @@ function App() {
                 ))}
               </div>
               
-              {/* Gradient Backgrounds */}
-              {activeBgTab === 'gradient' && (
-                <div className="grid grid-cols-6 gap-1.5">
-                  {gradientStyles.map((style) => (
-                    <button
-                      key={style.id}
-                      onClick={() => setSelectedStyle(style)}
-                      className={`relative aspect-square rounded-lg overflow-hidden transition-all ${
-                        selectedStyle.id === style.id
-                          ? 'ring-2 ring-violet-500 ring-offset-1'
-                          : 'hover:scale-105'
-                      }`}
-                      title={style.name}
-                    >
+              <div className="min-h-[100px]">
+                {/* Gradient Grid */}
+                {activeBgTab === 'gradient' && (
+                  <div className="grid grid-cols-6 gap-2.5">
+                    {gradientStyles.map((style) => (
                       <div
-                        className="w-full h-full"
-                        style={{ background: `linear-gradient(135deg, ${style.colors?.[0]}, ${style.colors?.[1]})` }}
-                      />
-                      {selectedStyle.id === style.id && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                          <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {/* Solid Backgrounds */}
-              {activeBgTab === 'solid' && (
-                <div className="grid grid-cols-6 gap-1.5">
-                  {solidStyles.map((style) => (
-                    <button
-                      key={style.id}
-                      onClick={() => setSelectedStyle(style)}
-                      className={`relative aspect-square rounded-lg overflow-hidden transition-all border ${
-                        selectedStyle.id === style.id
-                          ? 'ring-2 ring-violet-500 ring-offset-1 border-violet-500'
-                          : 'border-slate-200 hover:scale-105'
-                      }`}
-                      title={style.name}
-                      style={{ backgroundColor: style.color }}
-                    >
-                      {selectedStyle.id === style.id && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                          <Check className={`w-3 h-3 sm:w-4 sm:h-4 ${style.textColor === '#ffffff' ? 'text-white' : 'text-slate-800'}`} />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Texture Backgrounds */}
-              {activeBgTab === 'texture' && (
-                <div className="grid grid-cols-6 gap-1.5">
-                  {textureStyles.map((style) => (
-                    <button
-                      key={style.id}
-                      onClick={() => setSelectedStyle(style)}
-                      className={`relative aspect-square rounded-lg overflow-hidden transition-all border bg-white ${
-                        selectedStyle.id === style.id
-                          ? 'ring-2 ring-violet-500 ring-offset-1 border-violet-500'
-                          : 'border-slate-200 hover:scale-105'
-                      }`}
-                      title={style.name}
-                    >
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-slate-400">{getTextureIcon(style.textureType!)}</span>
-                        <span className="text-[9px] text-slate-500 mt-0.5">{style.name}</span>
-                      </div>
-                      {selectedStyle.id === style.id && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-violet-500/10">
-                          <Check className="w-3 h-3 sm:w-4 sm:h-4 text-violet-500" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* 自定义背景 */}
-              {customStyles.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-xs text-slate-500 mb-2">自定义</p>
-                  <div className="grid grid-cols-6 gap-1.5">
-                    {customStyles.map((style) => (
-                      <button
                         key={style.id}
                         onClick={() => setSelectedStyle(style)}
-                        className={`relative aspect-square rounded-lg overflow-hidden transition-all ${
-                          selectedStyle.id === style.id
-                            ? 'ring-2 ring-violet-500 ring-offset-1'
-                            : 'hover:scale-105'
-                        }`}
+                        className={`style-chip aspect-square ${selectedStyle.id === style.id ? 'active' : ''}`}
                       >
-                        <img
-                          src={style.imageUrl}
-                          alt={style.name}
-                          className="w-full h-full object-cover"
+                        <div
+                          className="w-full h-full"
+                          style={{ background: `linear-gradient(135deg, ${style.colors?.[0]}, ${style.colors?.[1]})` }}
                         />
                         {selectedStyle.id === style.id && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                            <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-white/20">
+                            <Check className="w-4 h-4 text-white drop-shadow-sm" />
                           </div>
                         )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Solid Grid */}
+                {activeBgTab === 'solid' && (
+                  <div className="grid grid-cols-6 gap-2.5">
+                    {solidStyles.map((style) => (
+                      <div
+                        key={style.id}
+                        onClick={() => setSelectedStyle(style)}
+                        className={`style-chip aspect-square border border-slate-100 ${selectedStyle.id === style.id ? 'active' : ''}`}
+                        style={{ backgroundColor: style.color }}
+                      >
+                        {selectedStyle.id === style.id && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Check className={`w-4 h-4 ${style.textColor === '#ffffff' ? 'text-white' : 'text-slate-800'}`} />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Texture Grid */}
+                {activeBgTab === 'texture' && (
+                  <div className="grid grid-cols-4 gap-2.5">
+                    {textureStyles.map((style) => (
+                      <div
+                        key={style.id}
+                        onClick={() => setSelectedStyle(style)}
+                        className={`style-chip h-16 border border-slate-100 bg-white flex flex-col items-center justify-center ${selectedStyle.id === style.id ? 'active' : ''}`}
+                      >
+                        <span className="text-slate-400 scale-110">{getTextureIcon(style.textureType!)}</span>
+                        <span className="text-[10px] font-bold text-slate-500 mt-1">{style.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Custom Styles */}
+              {customStyles.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">我的上传</p>
+                  <div className="grid grid-cols-6 gap-2.5">
+                    {customStyles.map((style) => (
+                      <div
+                        key={style.id}
+                        onClick={() => setSelectedStyle(style)}
+                        className={`style-chip aspect-square ${selectedStyle.id === style.id ? 'active' : ''}`}
+                      >
+                        <img src={style.imageUrl} alt={style.name} className="w-full h-full object-cover" />
                         <div
                           onClick={(e) => deleteCustomStyle(style.id, e)}
-                          className="absolute top-0.5 right-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                          className="absolute top-1 right-1 w-5 h-5 bg-rose-500 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
                         >
-                          <X className="w-2.5 h-2.5 text-white" />
+                          <X className="w-3 h-3 text-white" />
                         </div>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Font Settings */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200">
-              <div className="flex items-center gap-2 mb-3">
-                <Layout className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500" />
-                <h2 className="text-sm sm:text-base font-semibold text-slate-800">字体设置</h2>
+            {/* Typography Section */}
+            <div className="glass-panel control-section">
+              <div className="flex items-center gap-2.5 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                  <Type className="w-4 h-4 text-indigo-600" />
+                </div>
+                <h2 className="text-base font-bold text-slate-800">排版细节</h2>
               </div>
               
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs text-slate-500 mb-1.5 block">字体</Label>
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500">艺术字体</Label>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between h-8 sm:h-9 text-xs">
+                        <Button variant="outline" className="w-full justify-between h-10 bg-slate-50/50 border-slate-200 rounded-xl font-medium">
                           {selectedFont.name}
-                          <ChevronDown className="w-3 h-3" />
+                          <ChevronDown className="w-4 h-4 text-slate-400" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent>
+                      <DropdownMenuContent className="rounded-xl p-1 shadow-xl border-slate-100">
                         {fontFamilies.map((font) => (
-                          <DropdownMenuItem key={font.id} onClick={() => setSelectedFont(font)} className="text-xs">
+                          <DropdownMenuItem key={font.id} onClick={() => setSelectedFont(font)} className="rounded-lg font-medium cursor-pointer">
                             {font.name}
                           </DropdownMenuItem>
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                  <div>
-                    <Label className="text-xs text-slate-500 mb-1.5 block">对齐</Label>
-                    <div className="flex gap-1">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500">对齐方式</Label>
+                    <div className="flex p-1 bg-slate-100/50 rounded-xl h-10">
                       {[
                         { id: 'left', icon: AlignLeft },
                         { id: 'center', icon: AlignCenter },
@@ -983,51 +1174,53 @@ function App() {
                       ].map((align) => (
                         <button
                           key={align.id}
-                          onClick={() => setTextAlign(align.id as 'left' | 'center' | 'right')}
-                          className={`flex-1 py-2 rounded-lg border transition-all ${
+                          onClick={() => setTextAlign(align.id as any)}
+                          className={`flex-1 flex items-center justify-center rounded-lg transition-all ${
                             textAlign === align.id
-                              ? 'border-violet-500 bg-violet-50 text-violet-700'
-                              : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                              ? 'bg-white text-indigo-600 shadow-sm'
+                              : 'text-slate-400 hover:text-slate-600'
                           }`}
                         >
-                          <align.icon className="w-4 h-4 mx-auto" />
+                          <align.icon className="w-4 h-4" />
                         </button>
                       ))}
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <Label className="text-xs text-slate-500">字号</Label>
-                      <span className="text-xs text-slate-400">{fontSize}px</span>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <Label className="text-xs font-bold text-slate-500">文字大小</Label>
+                        <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">{fontSize}px</span>
+                      </div>
+                      <Slider value={[fontSize]} onValueChange={(v) => setFontSize(v[0])} min={24} max={120} step={2} />
                     </div>
-                    <Slider value={[fontSize]} onValueChange={(v) => setFontSize(v[0])} min={24} max={120} step={4} />
-                  </div>
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <Label className="text-xs text-slate-500">行高</Label>
-                      <span className="text-xs text-slate-400">{lineHeight}</span>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <Label className="text-xs font-bold text-slate-500">行间距</Label>
+                        <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">{lineHeight}</span>
+                      </div>
+                      <Slider value={[lineHeight]} onValueChange={(v) => setLineHeight(v[0])} min={1} max={3} step={0.1} />
                     </div>
-                    <Slider value={[lineHeight]} onValueChange={(v) => setLineHeight(v[0])} min={1} max={2.5} step={0.1} />
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <Label className="text-xs text-slate-500">边距</Label>
-                      <span className="text-xs text-slate-400">{padding}px</span>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <Label className="text-xs font-bold text-slate-500">安全边距</Label>
+                        <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">{padding}px</span>
+                      </div>
+                      <Slider value={[padding]} onValueChange={(v) => setPadding(v[0])} min={20} max={200} step={5} />
                     </div>
-                    <Slider value={[padding]} onValueChange={(v) => setPadding(v[0])} min={40} max={150} step={10} />
-                  </div>
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <Label className="text-xs text-slate-500">阴影</Label>
-                      <span className="text-xs text-slate-400">{shadowBlur}px</span>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <Label className="text-xs font-bold text-slate-500">投影深度</Label>
+                        <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">{shadowBlur}px</span>
+                      </div>
+                      <Slider value={[shadowBlur]} onValueChange={(v) => setShadowBlur(v[0])} min={0} max={100} step={1} />
                     </div>
-                    <Slider value={[shadowBlur]} onValueChange={(v) => setShadowBlur(v[0])} min={0} max={50} step={2} />
                   </div>
                 </div>
               </div>
@@ -1035,56 +1228,77 @@ function App() {
           </div>
 
           {/* Right Panel - Preview */}
-          <div className="lg:sticky lg:top-20">
-            <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm sm:text-base font-semibold text-slate-800">实时预览</h2>
-                <span className="text-xs text-slate-400">
-                  {selectedRatio.width} × {selectedRatio.height}
-                </span>
+          <div className="lg:col-span-7 lg:sticky lg:top-28">
+            <div className="preview-container animate-fade-in delay-150">
+              <div className="flex items-center justify-between mb-6 px-2">
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 tracking-tight">预览画布</h2>
+                  <p className="text-xs text-slate-400 font-bold mt-0.5">{selectedRatio.width} × {selectedRatio.height} 像素 · PNG</p>
+                </div>
+                <div className="flex gap-2">
+                  <div className="w-2 h-2 rounded-full bg-slate-200" />
+                  <div className="w-2 h-2 rounded-full bg-slate-200" />
+                  <div className="w-2 h-2 rounded-full bg-slate-200" />
+                </div>
               </div>
 
               <div 
-                className="relative rounded-xl overflow-hidden shadow-lg bg-slate-100 mx-auto"
+                className="preview-card-frame mx-auto group relative overflow-hidden bg-white shadow-2xl transition-transform duration-300"
                 style={{ 
                   aspectRatio: selectedRatio.id.replace(':', '/'),
-                  maxWidth: isMobile ? '100%' : '380px'
+                  width: '100%',
+                  maxWidth: isMobile ? '100%' : 'min(480px, 70vh)',
                 }}
               >
-                {generatedImage ? (
-                  <img
-                    src={generatedImage}
-                    alt="Preview"
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <p className="text-slate-400 text-sm">输入文字以预览</p>
-                  </div>
-                )}
-                {isGenerating && (
-                  <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-                    <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
+                {/* 双缓冲效果：始终显示生成的图片，通过过渡平滑更新 */}
+                <div className="w-full h-full relative">
+                  {generatedImage && (
+                    <img
+                      src={generatedImage}
+                      alt="Preview"
+                      className="w-full h-full object-contain select-none transition-opacity duration-200"
+                    />
+                  )}
+                  
+                  {/* 只在第一次加载或无内容时显示占位 */}
+                  {!generatedImage && !isGenerating && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4 bg-slate-50">
+                      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                        <Type className="w-6 h-6 text-slate-300" />
+                      </div>
+                      <p className="text-slate-400 text-sm font-bold">等待灵感注入...</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* 仅在导出或强制重新生成时显示极细微的状态提示（可选，这里先移除大遮罩） */}
               </div>
 
+              <div className="mt-8 grid grid-cols-2 gap-4">
+                <div className="glass-panel p-4 rounded-2xl border-indigo-100 bg-indigo-50/30">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Check className="w-4 h-4 text-indigo-600" />
+                    <h3 className="text-xs font-bold text-indigo-900">高清渲染</h3>
+                  </div>
+                  <p className="text-[10px] text-indigo-700 leading-relaxed font-medium">使用 Canvas 2D 引擎，确保导出的每一像素都极致清晰。</p>
+                </div>
+                <div className="glass-panel p-4 rounded-2xl border-indigo-100 bg-indigo-50/30">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Layout className="w-4 h-4 text-indigo-600" />
+                    <h3 className="text-xs font-bold text-indigo-900">自适应排版</h3>
+                  </div>
+                  <p className="text-[10px] text-indigo-700 leading-relaxed font-medium">智能计算文字行高与边距，在任何比例下都完美呈现。</p>
+                </div>
+              </div>
+              
               <Button
                 onClick={downloadImage}
                 disabled={!generatedImage}
-                className="w-full mt-4 gap-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 sm:hidden"
+                className="w-full mt-6 btn-premium h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-lg lg:hidden shadow-xl shadow-indigo-200"
               >
-                <Download className="w-4 h-4" />
-                下载图片
+                <Download className="w-5 h-5 mr-2" />
+                保存到相册
               </Button>
-
-              <div className="mt-4 p-3 bg-violet-50 rounded-xl">
-                <h3 className="text-xs font-semibold text-violet-800 mb-1">使用提示</h3>
-                <ul className="text-xs text-violet-700 space-y-0.5">
-                  <li>• 修改设置后会实时更新预览</li>
-                  <li>• 文字会根据图片宽度自动换行</li>
-                </ul>
-              </div>
             </div>
           </div>
         </div>
@@ -1092,47 +1306,43 @@ function App() {
 
       {/* Custom Image Dialog */}
       <Dialog open={customDialogOpen} onOpenChange={setCustomDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>自定义背景图片</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <div>
-              <Label className="text-sm text-slate-600 mb-2 block">上传本地图片</Label>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                accept="image/*"
-                className="hidden"
-              />
+        <DialogContent className="sm:max-w-md glass-panel !border-none p-0 overflow-hidden">
+          <div className="bg-indigo-600 p-6 text-white">
+            <DialogTitle className="text-xl font-bold">自定义背景图片</DialogTitle>
+            <p className="text-indigo-100 text-xs mt-1">上传或输入 URL 来定制专属背景</p>
+          </div>
+          <div className="p-6 space-y-6">
+            <div className="space-y-3">
+              <Label className="text-sm font-bold text-slate-700">本地上传</Label>
+              <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
               <Button
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full gap-2"
+                className="w-full h-12 gap-2 border-2 border-dashed border-slate-200 hover:border-indigo-500 hover:bg-indigo-50 rounded-xl transition-all"
               >
-                <Upload className="w-4 h-4" />
-                选择图片
+                <Upload className="w-4 h-4 text-slate-400" />
+                <span className="font-bold text-slate-600">点击选择图片文件</span>
               </Button>
             </div>
+            
             <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-slate-500">或</span>
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100" /></div>
+              <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest text-slate-400">
+                <span className="bg-white px-3">或者</span>
               </div>
             </div>
-            <div>
-              <Label className="text-sm text-slate-600 mb-2 block">图片链接</Label>
+
+            <div className="space-y-3">
+              <Label className="text-sm font-bold text-slate-700">网络图片 URL</Label>
               <div className="flex gap-2">
                 <Input
                   value={customImageUrl}
                   onChange={(e) => setCustomImageUrl(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
+                  placeholder="https://images.unsplash.com/..."
+                  className="h-11 rounded-xl bg-slate-50 border-slate-100"
                 />
-                <Button onClick={addImageUrl} variant="outline">
-                  添加
+                <Button onClick={addImageUrl} className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold">
+                  确认
                 </Button>
               </div>
             </div>
