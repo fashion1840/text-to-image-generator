@@ -4,7 +4,7 @@
 
 ## 在线体验
 
-https://vswijg757kr7a.ok.kimi.link
+https://text-to-image-generator-pink.vercel.app
 
 ## 功能特性
 
@@ -58,8 +58,11 @@ npm run build
 ```
 
 ## 截图
+### 手机端
+![预览](https://github.com/fashion1840/text-to-image-generator/raw/phone_preview.png)
 
-![预览](https://github.com/fashion1840/text-to-image-generator/raw/main/preview.png)
+### 桌面端
+![预览](https://github.com/fashion1840/text-to-image-generator/raw/desktop_preview.png)
 
 ## License
 
