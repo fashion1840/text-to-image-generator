@@ -59,7 +59,7 @@ npm run build
 
 ## 截图
 ### 手机端
-![预览](https://github.com/fashion1840/text-to-image-generator/raw/phone_preview.png)
+![预览](raw/phone_preview.png)
 
 ### 桌面端
 ![预览](https://github.com/fashion1840/text-to-image-generator/raw/desktop_preview.png)
