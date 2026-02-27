@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import './App.css'
 import { 
-  Type, 
+  Type,
+  Image,
   Download, 
   RefreshCw, 
   Palette, 
@@ -103,11 +104,11 @@ const textureStyles: BackgroundStyle[] = [
 
 // 字体配置
 const fontFamilies = [
-  { id: 'system', name: '系统默认', family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
-  { id: 'serif', name: '思源宋体', family: '"Noto Serif SC", "Source Han Serif SC", serif' },
-  { id: 'kaiti', name: '古典楷体', family: '"Kaiti SC", "STKaiti", "KaiTi", serif' },
-  { id: 'rounded', name: '现代圆体', family: '"PingFang SC", "Microsoft YaHei", "Quicksand", sans-serif' },
-  { id: 'mono', name: '等宽字体', family: '"SF Mono", "Consolas", monospace' },
+  { id: 'system', name: '系统默认', family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' },
+  { id: 'serif', name: '思源宋体', family: '"Noto Serif SC", "Source Han Serif SC", "SimSun", "STSong", serif' },
+  { id: 'heiti', name: '思源黑体', family: '"Noto Sans SC", "Source Han Sans SC", "SimHei", "STHeiti", sans-serif' },
+  { id: 'rounded', name: '现代圆体', family: '"PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif' },
+  { id: 'fantasy', name: '文艺手写', family: '"STXingkai", "Xingkai SC", "KaiTi", cursive' },
 ]
 
 // 背景比例
@@ -895,39 +896,33 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white selection:bg-yellow-500/30 relative overflow-hidden">
-      {/* 背景装饰 */}
-      <div className="fixed inset-0 grid-bg pointer-events-none" />
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] gradient-hero rounded-full pointer-events-none" />
-      
+    <div className="min-h-screen hero-gradient text-black selection:bg-black/20">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3 sm:gap-4 group cursor-default">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-yellow-500/20 group-hover:scale-105 transition-transform duration-300">
-              <Type className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
+      <header className="sticky top-0 z-50 bg-white border-b-3 border-black">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5 group cursor-default">
+            <div className="w-9 h-9 bg-gradient-to-br from-pink-500 via-yellow-400 to-cyan-400 rounded-lg flex items-center justify-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] border-2 border-black group-hover:translate-x-[-1px] group-hover:translate-y-[-1px] transition-transform">
+              <span className="text-lg font-black text-white drop-shadow-md">T</span>
             </div>
-            <div>
-              <h1 className="text-lg sm:text-2xl font-bold tracking-tight">
-                文字转图片 <span className="text-yellow-400">Pro</span>
-              </h1>
-              <p className="text-[10px] sm:text-xs text-gray-500 font-medium tracking-wider uppercase">Text to Image Generator</p>
-            </div>
+            <span className="text-xl sm:text-2xl font-black tracking-tight">字图</span>
           </div>
-          <div className="flex items-center gap-3">
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={resetSettings}
-              className="gap-2 text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+              className="gap-1.5 text-gray-600 hover:text-black hover:bg-gray-100 transition-colors font-bold h-9 px-3"
             >
               <RefreshCw className="w-4 h-4" />
-              <span className="hidden sm:inline font-medium">重置</span>
+              <span className="hidden sm:inline text-sm">重置</span>
             </Button>
             <Button
               onClick={downloadImage}
               disabled={!generatedImage}
-              className="btn-primary gap-2 px-4 sm:px-6 rounded-xl"
+              className="btn-primary gap-1.5 px-4 h-9 text-sm rounded-md"
             >
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline font-bold">导出图片</span>
@@ -937,20 +932,20 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative z-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Left Panel - Controls */}
           <div className="lg:col-span-5 space-y-6 animate-fade-in">
             {/* Text Input Section */}
             <div className="control-section">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-yellow-400/10 flex items-center justify-center">
-                    <Type className="w-4 h-4 text-yellow-400" />
+                  <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
+                    <Type className="w-4 h-4 text-white" />
                   </div>
-                  <h2 className="text-base font-bold text-white">文字内容</h2>
+                  <h2 className="text-base font-black">文字内容</h2>
                 </div>
-                <div className="flex items-center bg-black/30 rounded-xl p-1 border border-white/5">
+                <div className="flex items-center bg-gray-100 rounded-lg p-1 border-2 border-black">
                   {[
                     { id: 'bold', icon: Bold, title: '粗体' },
                     { id: 'italic', icon: Italic, title: '斜体' },
@@ -960,10 +955,10 @@ function App() {
                     <button
                       key={btn.id}
                       onClick={() => insertFormat(btn.id)}
-                      className="p-2 hover:bg-white/10 rounded-lg transition-all"
+                      className="p-2 hover:bg-black hover:text-white rounded-md transition-all"
                       title={btn.title}
                     >
-                      <btn.icon className="w-4 h-4 text-gray-400 hover:text-white" />
+                      <btn.icon className="w-4 h-4" />
                     </button>
                   ))}
                 </div>
@@ -973,44 +968,42 @@ function App() {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="在这里输入你想要转换成图片的文字...&#10;支持 Markdown 格式：*斜体*、**粗体**、__下划线__、==高亮=="
-                className="textarea-premium min-h-[140px] text-base leading-relaxed rounded-xl resize-none"
+                className="textarea-premium min-h-[160px] text-base leading-relaxed rounded-lg resize-none"
               />
               
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] text-gray-500 font-medium">
-                  支持 Markdown 格式，按回车换行
+              <div className="flex items-center justify-between mt-3">
+                <p className="text-xs text-gray-500 font-bold">
+                  支持 Markdown 格式
                 </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
                   onClick={clearText}
-                  className="text-gray-500 hover:text-red-400 hover:bg-red-500/10 text-xs h-8 px-3"
+                  className="h-8 px-5 text-xs font-black text-white bg-black hover:bg-gray-800 rounded-lg transition-all border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]"
                 >
                   清空
-                </Button>
+                </button>
               </div>
             </div>
 
             {/* Layout Settings Section */}
             <div className="control-section">
-              <div className="flex items-center gap-2.5 mb-1">
-                <div className="w-8 h-8 rounded-lg bg-yellow-400/10 flex items-center justify-center">
-                  <Layout className="w-4 h-4 text-yellow-400" />
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
+                  <Layout className="w-4 h-4 text-white" />
                 </div>
-                <h2 className="text-base font-bold text-white">图片比例</h2>
+                <h2 className="text-base font-black">图片比例</h2>
               </div>
               <div className="grid grid-cols-4 gap-3">
                 {aspectRatios.map((ratio) => (
                   <button
                     key={ratio.id}
                     onClick={() => setSelectedRatio(ratio)}
-                    className={`py-2.5 rounded-xl border-2 font-bold transition-all ${
+                    className={`py-3 rounded-lg border-3 font-black transition-all ${
                       selectedRatio.id === ratio.id
-                        ? 'border-yellow-400 bg-yellow-400/10 text-yellow-400'
-                        : 'border-white/10 text-gray-400 hover:border-white/20 bg-white/5'
+                        ? 'border-black bg-black text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)]'
+                        : 'border-black text-black hover:bg-gray-100 bg-white'
                     }`}
                   >
-                    <span className="text-xs">{ratio.name}</span>
+                    <span className="text-sm">{ratio.name}</span>
                   </button>
                 ))}
               </div>
@@ -1018,23 +1011,23 @@ function App() {
 
             {/* Appearance Section */}
             <div className="control-section">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-yellow-400/10 flex items-center justify-center">
-                    <Palette className="w-4 h-4 text-yellow-400" />
+                  <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
+                    <Palette className="w-4 h-4 text-white" />
                   </div>
-                  <h2 className="text-base font-bold text-white">背景与样式</h2>
+                  <h2 className="text-base font-black">背景与样式</h2>
                 </div>
                 <button
                   onClick={() => setCustomDialogOpen(true)}
-                  className="px-3 py-1.5 text-xs font-bold text-black bg-yellow-400 hover:bg-yellow-300 rounded-xl transition-all"
+                  className="px-4 py-2 text-xs font-black text-white bg-black hover:bg-gray-800 rounded-lg transition-all border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]"
                 >
                   + 自定义图片
                 </button>
               </div>
               
               {/* Tab Switch */}
-              <div className="flex p-1 bg-black/40 rounded-xl mb-4 border border-white/5">
+              <div className="flex p-1 bg-gray-100 rounded-lg mb-4 border-2 border-black">
                 {[
                   { id: 'gradient', label: '魔法渐变' },
                   { id: 'solid', label: '极简纯色' },
@@ -1043,10 +1036,10 @@ function App() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveBgTab(tab.id as any)}
-                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                    className={`flex-1 py-2 rounded-md text-xs font-black transition-all ${
                       activeBgTab === tab.id
-                        ? 'bg-white/10 text-white'
-                        : 'text-gray-500 hover:text-gray-300'
+                        ? 'bg-black text-white'
+                        : 'text-gray-600 hover:text-black'
                     }`}
                   >
                     {tab.label}
@@ -1117,8 +1110,8 @@ function App() {
 
               {/* Custom Styles */}
               {customStyles.length > 0 && (
-                <div className="mt-6 pt-6 border-t border-white/5">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">我的上传</p>
+                <div className="mt-6 pt-6 border-t-2 border-black/10">
+                  <p className="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">我的上传</p>
                   <div className="grid grid-cols-6 gap-2.5">
                     {customStyles.map((style) => (
                       <div
@@ -1126,10 +1119,10 @@ function App() {
                         onClick={() => setSelectedStyle(style)}
                         className={`style-chip aspect-square ${selectedStyle.id === style.id ? 'active' : ''}`}
                       >
-                        <img src={style.imageUrl} alt={style.name} className="w-full h-full object-cover rounded-xl" />
+                        <img src={style.imageUrl} alt={style.name} className="w-full h-full object-cover rounded-lg border-2 border-black" />
                         <div
                           onClick={(e) => deleteCustomStyle(style.id, e)}
-                          className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
+                          className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer border-2 border-white"
                         >
                           <X className="w-3 h-3 text-white" />
                         </div>
@@ -1142,20 +1135,20 @@ function App() {
 
             {/* Typography Section */}
             <div className="control-section">
-              <div className="flex items-center gap-2.5 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-yellow-400/10 flex items-center justify-center">
-                  <Type className="w-4 h-4 text-yellow-400" />
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
+                  <Type className="w-4 h-4 text-white" />
                 </div>
-                <h2 className="text-base font-bold text-white">排版细节</h2>
+                <h2 className="text-base font-black">排版细节</h2>
               </div>
               
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-gray-500">艺术字体</Label>
+                    <Label className="text-xs font-black text-gray-600">艺术字体</Label>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between h-10 bg-black/30 border-white/10 rounded-xl font-medium px-3 text-white hover:bg-white/5 hover:border-white/20">
+                        <Button variant="outline" className="w-full justify-between h-11 bg-white border-2 border-black rounded-lg font-bold px-3 text-black hover:bg-gray-50 hover:text-black">
                           <span style={{ fontFamily: selectedFont.family }} className="truncate">
                             {selectedFont.name}
                           </span>
@@ -1166,21 +1159,21 @@ function App() {
                         side="bottom" 
                         align="start" 
                         sideOffset={8}
-                        className="w-48 rounded-xl p-1 shadow-2xl border-white/10 bg-[#1a1a1a] backdrop-blur-md"
+                        className="w-48 rounded-lg p-1.5 shadow-2xl border-2 border-black bg-white"
                       >
                         {fontFamilies.map((font) => (
                           <DropdownMenuItem 
                             key={font.id} 
                             onClick={() => setSelectedFont(font)} 
-                            className={`rounded-lg px-3 py-2 cursor-pointer transition-colors ${
+                            className={`rounded-md px-3 py-2 cursor-pointer transition-all mb-1 last:mb-0 border-2 ${
                               selectedFont.id === font.id 
-                                ? 'bg-yellow-400/10 text-yellow-400' 
-                                : 'hover:bg-white/5 text-gray-300'
+                                ? 'border-black bg-black text-white' 
+                                : 'border-transparent hover:border-black bg-white text-black'
                             }`}
                           >
                             <span className="text-sm font-bold" style={{ fontFamily: font.family }}>{font.name}</span>
                             {selectedFont.id === font.id && (
-                              <Check className="w-4 h-4 ml-auto text-yellow-400" />
+                              <Check className="w-4 h-4 ml-auto" />
                             )}
                           </DropdownMenuItem>
                         ))}
@@ -1188,8 +1181,8 @@ function App() {
                     </DropdownMenu>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-gray-500">对齐方式</Label>
-                    <div className="flex p-1 bg-black/40 rounded-xl h-10 border border-white/5">
+                    <Label className="text-xs font-black text-gray-600">对齐方式</Label>
+                    <div className="flex p-1 bg-gray-100 rounded-lg h-11 border-2 border-black">
                       {[
                         { id: 'left', icon: AlignLeft },
                         { id: 'center', icon: AlignCenter },
@@ -1198,10 +1191,10 @@ function App() {
                         <button
                           key={align.id}
                           onClick={() => setTextAlign(align.id as any)}
-                          className={`flex-1 flex items-center justify-center rounded-lg transition-all ${
+                          className={`flex-1 flex items-center justify-center rounded-md transition-all ${
                             textAlign === align.id
-                              ? 'bg-white/10 text-yellow-400'
-                              : 'text-gray-500 hover:text-gray-300'
+                              ? 'bg-black text-white'
+                              : 'text-gray-600 hover:text-black'
                           }`}
                         >
                           <align.icon className="w-4 h-4" />
@@ -1212,35 +1205,35 @@ function App() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
                       <div className="flex justify-between">
-                        <Label className="text-xs font-bold text-gray-500">文字大小</Label>
-                        <span className="text-xs font-bold text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-md">{fontSize}px</span>
+                        <Label className="text-xs font-black text-gray-600">文字大小</Label>
+                        <span className="text-xs font-black text-white bg-black px-2 py-0.5 rounded">{fontSize}px</span>
                       </div>
                       <Slider value={[fontSize]} onValueChange={(v) => setFontSize(v[0])} min={24} max={120} step={2} />
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <div className="flex justify-between">
-                        <Label className="text-xs font-bold text-gray-500">行间距</Label>
-                        <span className="text-xs font-bold text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-md">{lineHeight}</span>
+                        <Label className="text-xs font-black text-gray-600">行间距</Label>
+                        <span className="text-xs font-black text-white bg-black px-2 py-0.5 rounded">{lineHeight}</span>
                       </div>
                       <Slider value={[lineHeight]} onValueChange={(v) => setLineHeight(v[0])} min={1} max={3} step={0.1} />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
                       <div className="flex justify-between">
-                        <Label className="text-xs font-bold text-gray-500">安全边距</Label>
-                        <span className="text-xs font-bold text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-md">{padding}px</span>
+                        <Label className="text-xs font-black text-gray-600">安全边距</Label>
+                        <span className="text-xs font-black text-white bg-black px-2 py-0.5 rounded">{padding}px</span>
                       </div>
                       <Slider value={[padding]} onValueChange={(v) => setPadding(v[0])} min={20} max={200} step={5} />
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <div className="flex justify-between">
-                        <Label className="text-xs font-bold text-gray-500">投影深度</Label>
-                        <span className="text-xs font-bold text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-md">{shadowBlur}px</span>
+                        <Label className="text-xs font-black text-gray-600">投影深度</Label>
+                        <span className="text-xs font-black text-white bg-black px-2 py-0.5 rounded">{shadowBlur}px</span>
                       </div>
                       <Slider value={[shadowBlur]} onValueChange={(v) => setShadowBlur(v[0])} min={0} max={100} step={1} />
                     </div>
@@ -1253,20 +1246,14 @@ function App() {
           {/* Right Panel - Preview */}
           <div className="lg:col-span-7 lg:sticky lg:top-28">
             <div className="preview-container animate-fade-in-up">
-              <div className="flex items-center justify-between mb-6 px-2">
-                <div>
-                  <h2 className="text-xl font-black text-white tracking-tight">预览画布</h2>
-                  <p className="text-xs text-gray-500 font-bold mt-0.5">{selectedRatio.width} × {selectedRatio.height} 像素 · PNG</p>
-                </div>
-                <div className="flex gap-2">
-                  <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-                  <div className="w-2 h-2 rounded-full bg-gray-700" />
-                  <div className="w-2 h-2 rounded-full bg-gray-700" />
-                </div>
+              {/* 标题 */}
+              <div className="mb-4">
+                <h2 className="text-xl font-black text-black tracking-tight">预览画布</h2>
+                <p className="text-xs text-gray-500 font-black mt-1">{selectedRatio.width} × {selectedRatio.height} 像素 · PNG</p>
               </div>
 
               <div 
-                className="preview-card-frame mx-auto group relative overflow-hidden transition-all duration-300"
+                className="preview-card-frame mx-auto group relative overflow-hidden transition-all duration-300 bg-white"
                 style={{ 
                   aspectRatio: selectedRatio.id.replace(':', '/'),
                   width: '100%',
@@ -1274,7 +1261,7 @@ function App() {
                 }}
               >
                 {/* 双缓冲效果：始终显示生成的图片，通过过渡平滑更新 */}
-                <div className="w-full h-full relative bg-[#111]">
+                <div className="w-full h-full relative bg-gray-100">
                   {generatedImage && (
                     <img
                       src={generatedImage}
@@ -1286,36 +1273,40 @@ function App() {
                   {/* 只在第一次加载或无内容时显示占位 */}
                   {!generatedImage && !isGenerating && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
-                      <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10">
-                        <Type className="w-8 h-8 text-gray-600" />
+                      <div className="w-20 h-20 rounded-2xl bg-white flex items-center justify-center border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <Type className="w-10 h-10 text-black" />
                       </div>
-                      <p className="text-gray-500 text-sm font-medium">输入文字开始创作...</p>
+                      <p className="text-gray-600 text-sm font-bold">输入文字开始创作...</p>
                     </div>
                   )}
                 </div>
               </div>
 
               <div className="mt-8 grid grid-cols-2 gap-4">
-                <div className="glass-panel p-4 rounded-2xl border-yellow-400/20 bg-yellow-400/5">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Check className="w-4 h-4 text-yellow-400" />
-                    <h3 className="text-xs font-bold text-white">高清渲染</h3>
+                <div className="glass-panel p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="text-sm font-black text-black">高清渲染</h3>
                   </div>
-                  <p className="text-[10px] text-gray-400 leading-relaxed font-medium">使用 Canvas 2D 引擎，确保导出的每一像素都极致清晰。</p>
+                  <p className="text-xs text-gray-600 leading-relaxed font-bold">使用 Canvas 2D 引擎，确保导出的每一像素都极致清晰。</p>
                 </div>
-                <div className="glass-panel p-4 rounded-2xl border-yellow-400/20 bg-yellow-400/5">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Layout className="w-4 h-4 text-yellow-400" />
-                    <h3 className="text-xs font-bold text-white">自适应排版</h3>
+                <div className="glass-panel p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
+                      <Layout className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="text-sm font-black text-black">自适应排版</h3>
                   </div>
-                  <p className="text-[10px] text-gray-400 leading-relaxed font-medium">智能计算文字行高与边距，在任何比例下都完美呈现。</p>
+                  <p className="text-xs text-gray-600 leading-relaxed font-bold">智能计算文字行高与边距，在任何比例下都完美呈现。</p>
                 </div>
               </div>
               
               <Button
                 onClick={downloadImage}
                 disabled={!generatedImage}
-                className="w-full mt-6 btn-primary h-14 text-black font-black text-lg lg:hidden rounded-xl"
+                className="w-full mt-6 btn-primary h-14 text-white font-black text-lg lg:hidden rounded-lg"
               >
                 <Download className="w-5 h-5 mr-2" />
                 保存到相册
@@ -1327,42 +1318,42 @@ function App() {
 
       {/* Custom Image Dialog */}
       <Dialog open={customDialogOpen} onOpenChange={setCustomDialogOpen}>
-        <DialogContent className="sm:max-w-md !border-none p-0 overflow-hidden bg-[#141414] border border-white/10">
-          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 p-6 text-black">
-            <DialogTitle className="text-xl font-bold">自定义背景图片</DialogTitle>
-            <p className="text-black/70 text-xs mt-1">上传或输入 URL 来定制专属背景</p>
+        <DialogContent className="sm:max-w-md !border-none p-0 overflow-hidden bg-white border-3 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+          <div className="bg-black p-5 text-white border-b-3 border-black">
+            <DialogTitle className="text-lg font-black">自定义背景图片</DialogTitle>
+            <p className="text-gray-400 text-xs mt-1 font-bold">上传或输入 URL 来定制专属背景</p>
           </div>
-          <div className="p-6 space-y-6">
-            <div className="space-y-3">
-              <Label className="text-sm font-bold text-gray-300">本地上传</Label>
+          <div className="p-5 space-y-5">
+            <div className="space-y-2">
+              <Label className="text-sm font-black text-black">本地上传</Label>
               <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
               <Button
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full h-12 gap-2 border-2 border-dashed border-white/20 hover:border-yellow-400 hover:bg-yellow-400/5 rounded-xl transition-all bg-transparent"
+                className="w-full h-12 gap-2 border-2 border-dashed border-black hover:bg-gray-50 rounded-lg transition-all bg-white"
               >
-                <Upload className="w-4 h-4 text-gray-500" />
-                <span className="font-bold text-gray-400">点击选择图片文件</span>
+                <Upload className="w-5 h-5 text-black" />
+                <span className="font-bold text-black">点击选择图片文件</span>
               </Button>
             </div>
             
             <div className="relative">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10" /></div>
-              <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest text-gray-500">
-                <span className="bg-[#141414] px-3">或者</span>
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t-2 border-black/10" /></div>
+              <div className="relative flex justify-center text-xs uppercase font-black tracking-widest text-gray-400">
+                <span className="bg-white px-3">或者</span>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <Label className="text-sm font-bold text-gray-300">网络图片 URL</Label>
-              <div className="flex gap-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-black text-black">网络图片 URL</Label>
+              <div className="flex gap-2 items-center">
                 <Input
                   value={customImageUrl}
                   onChange={(e) => setCustomImageUrl(e.target.value)}
                   placeholder="https://images.unsplash.com/..."
-                  className="h-11 rounded-xl bg-black/30 border-white/10 text-white placeholder:text-gray-600 focus:border-yellow-400"
+                  className="h-11 rounded-lg bg-white border-2 border-black text-black placeholder:text-gray-400 focus:border-black focus:ring-0 font-bold flex-1"
                 />
-                <Button onClick={addImageUrl} className="h-11 px-6 btn-primary rounded-xl font-bold">
+                <Button onClick={addImageUrl} className="h-11 px-5 btn-primary rounded-lg font-black shrink-0">
                   确认
                 </Button>
               </div>
