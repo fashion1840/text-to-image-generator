@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import './App.css'
 import { 
   Type,
-  Image,
   Download, 
   RefreshCw, 
   Palette, 
